@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import base64
-from s1c3 import find_single_byte_xor, score
-from s1c5 import repeating_key_xor
+from challenge3 import find_single_byte_xor, score
+from challenge5 import repeating_key_xor
 
 def popcount(num):
 	return bin(num).count('1')
