@@ -41,6 +41,12 @@ for num in range(num_tests):
     num_unique = interblock_unique_chars_ratio(ciphertext, 16)
     if (num_unique < 0.5 and mode == 'ECB' or num_unique >= 0.5 and mode == 'CBC'): 
         num_correct += 1
+
+    # Note that I could just have compared, say, the second and third blocks, 
+    # since they are not affected by the padding, but in that case I must 
+    # know how long the padding might be. Another way is to steadily increase
+    # the length of test_text and see that the interblock unique character 
+    # ratio decreases with each blocklength. 
     
     #print(len(ciphertext), num_unique, mode)
     modes[mode] += 1
