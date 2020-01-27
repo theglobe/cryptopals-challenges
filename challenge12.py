@@ -47,41 +47,49 @@ if (diffs_num_unique < 0):
 
 # Now on to the attack
 
+# Instead of doing exactly as in the challenge description, we will
+# make the initial padding of A's one byte short of the total encrypted
+# (padded) secret message. If we input an empty string to the oracle,
+# it will pad and encrypt just the secret message and we can start with
+# our initial padding (the A's) as one byte short of this. The rest goes
+# just as in the challenge description.
+
+# This method is a bit slower, since it needs to compare the whole length 
+# of the encrypted message to the test string, but it takes just a second 
+# in this case anyway.
+
 shortest = len(aes_encryption_oracle(b'', consistent_random_key))
-target_length = shortest + blocksize -1
-one_byte_short = b'A' * (blocksize - 1)
-one_byte_short_encrypted = aes_encryption_oracle(one_byte_short, consistent_random_key)
+target_size = shortest  
+input_block = b'A' * (target_size - 1)
+peek_encrypted = aes_encryption_oracle(input_block, consistent_random_key)
 
 # Right after our crafted string now comes the first byte of the secret.
 # This string contains the cipher of the crafted string and the first byte:
-first_bytes_of_cipher = one_byte_short_encrypted[:blocksize-2]
+peek_block = peek_encrypted[:target_size-2]
 
 # We can now match it 
-decoded_chars = []
+decoded_chars = b''
 charpos = 0
-while(charpos < blocksize):
+while(charpos < target_size):
     for char in range(257):
         if (char > 255):
-            print("Some error")
-            print(one_byte_short)
-            print(bytes(decoded_chars))
-            print(charpos)
+            print(decoded_chars.decode('ascii'))
             sys.exit(0)
 
-        input_block = one_byte_short + bytes([char])
-        encrypted = aes_encryption_oracle(input_block, consistent_random_key)
-        encrypted_block = encrypted[:blocksize-2+charpos]
-        assert(len(encrypted_block) == len(first_bytes_of_cipher))
+        test_block = input_block + bytes([char])
+        encrypted = aes_encryption_oracle(test_block, consistent_random_key)
+        encrypted_block = encrypted[:target_size-2]
+        assert(len(encrypted_block) == len(peek_block))
 
-        if (encrypted_block == first_bytes_of_cipher):
-            print(char)
-            decoded_chars.append(char)
+        if (encrypted_block == peek_block):
+            decoded_chars += bytes([char])
             charpos += 1
 
-            one_byte_short = one_byte_short + bytes([char])
-            one_byte_short_encrypted = aes_encryption_oracle(one_byte_short, consistent_random_key)
-            first_bytes_of_cipher = one_byte_short_encrypted[:blocksize-2+charpos]
-            assert(len(first_bytes_of_cipher) == blocksize+charpos-2)
+            padding = b'A' * (target_size - 1 - charpos)
+            input_block = padding + decoded_chars
+            peek_encrypted = aes_encryption_oracle(padding, consistent_random_key)
+            peek_block = peek_encrypted[:target_size-2]
+            assert(len(input_block) == target_size-1)
             break
 
-print(bytes(decoded_chars))
+print(decoded_chars.decode('ascii'))
